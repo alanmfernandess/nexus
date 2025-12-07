@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS OS v10.6 | Cargo Logistics</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 ACESSO RESTRITO</h2>
+                <p>NEXUS OPERATING SYSTEM v10.6</p>
+            </div>
+            <div class="modal-body">
+                <p>Insira sua <strong>Google Gemini API Key</strong> para estabelecer conexão segura com o mainframe.</p>
+                <div class="input-wrapper">
+                    <input type="password" id="api-key-input" placeholder="Cole sua chave aqui (AI Studio)...">
+                </div>
+                <button id="connect-btn" class="btn-primary">INICIAR SISTEMA</button>
+                <p class="security-note">🔒 Sua chave é armazenada apenas na memória local do seu navegador.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <h1>NEXUS OS</h1>
+                <span class="version-tag">v10.6 CARGO</span>
+            </div>
+
+            <div class="data-card base-card">
+                <label>BASE OPERACIONAL</label>
+                <div class="value" id="base-indicator">SBJR (Jacarepaguá)</div>
+                <div class="sub-value">Alternado Noturno: SBGL</div>
+            </div>
+
+            <div class="data-card finance-card">
+                <label>CAIXA EMPRESA</label>
+                <div class="value">R$ 1.293.800</div>
+            </div>
+
+            <div class="data-card status-card">
+                <label>STATUS CCO</label>
+                <div class="value status-online">● ONLINE</div>
+                <div class="sub-value">Silent Mode: ATIVO</div>
+            </div>
+
+            <div class="fleet-list">
+                <label>FROTA ATIVA</label>
+                <ul>
+                    <li><strong>PR-WWA</strong> <span>Arrow IV (Turbo)</span></li>
+                    <li><strong>PR-WWB</strong> <span>Arrow IV (Turbo)</span></li>
+                    <li><strong>PR-NEX</strong> <span>Warrior II</span></li>
+                </ul>
+            </div>
+
+            <div class="footer-info">
+                <p>RTC: <span id="clock-display">--:--</span></p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <div id="chat-container" class="chat-scroll-area">
+                <div class="message system-msg">
+                    <div class="msg-header">🤖 CCO NEXUS</div>
+                    <div class="msg-body">
+                        Sistema inicializado.<br>
+                        Protocolo de Carga Carregado.<br>
+                        Aguardando identificação do Comandante.<br><br>
+                        <em>Por favor, efetue Login.</em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-deck">
+                <div id="processing-bar" class="processing-hidden">
+                    <div class="bar-animation"></div>
+                    <span>PROCESSANDO DADOS DE VOO...</span>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="action-btn" data-cmd="Qual a minha missão?">📋 MISSÃO</button>
+                    <button class="action-btn" data-cmd="Acionado. Taxiando.">🔋 ACIONAR</button>
+                    <button class="action-btn" data-cmd="Fora do solo">🛫 DECOLAR</button>
+                    <button class="action-btn" data-cmd="Nivelado">✈️ NIVELADO</button>
+                    <button class="action-btn" data-cmd="Iniciei descida">📉 DESCIDA</button>
+                    <button class="action-btn" data-cmd="No solo">🛬 POUSO</button>
+                    <button class="action-btn" data-cmd="Corte">🛑 CORTE</button>
+                    <button class="action-btn" data-cmd="Status Report">📊 RELATÓRIO</button>
+                </div>
+
+                <div class="input-area">
+                    <input type="text" id="user-input" placeholder="Comandante, envie sua ordem..." autocomplete="off">
+                    <button id="send-btn" class="send-button">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
