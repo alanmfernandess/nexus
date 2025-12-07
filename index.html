@@ -6,7 +6,6 @@
     <title>NEXUS OS v10.6 | Cargo Logistics</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
-    
     <link rel="stylesheet" href="style.css">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,29 +16,12 @@
 </head>
 <body>
 
-    <div id="auth-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>🔐 ACESSO RESTRITO</h2>
-                <p>NEXUS OPERATING SYSTEM v10.6</p>
-            </div>
-            <div class="modal-body">
-                <p>Insira sua <strong>Google Gemini API Key</strong> para estabelecer conexão segura com o mainframe.</p>
-                <div class="input-wrapper">
-                    <input type="password" id="api-key-input" placeholder="Cole sua chave aqui (AI Studio)...">
-                </div>
-                <button id="connect-btn" class="btn-primary">INICIAR SISTEMA</button>
-                <p class="security-note">🔒 Sua chave é armazenada apenas na memória local do seu navegador.</p>
-            </div>
-        </div>
-    </div>
-
     <div class="app-container">
         
         <aside class="sidebar">
             <div class="logo-area">
                 <h1>NEXUS OS</h1>
-                <span class="version-tag">v10.6 CARGO</span>
+                <span class="version-tag">v10.6 AUTO</span>
             </div>
 
             <div class="data-card base-card">
@@ -55,8 +37,8 @@
 
             <div class="data-card status-card">
                 <label>STATUS CCO</label>
-                <div class="value status-online">● ONLINE</div>
-                <div class="sub-value">Silent Mode: ATIVO</div>
+                <div class="value status-online">● CONECTADO</div>
+                <div class="sub-value">Protocolo: Cargo Only</div>
             </div>
 
             <div class="fleet-list">
@@ -76,21 +58,12 @@
         <main class="main-content">
             
             <div id="chat-container" class="chat-scroll-area">
-                <div class="message system-msg">
-                    <div class="msg-header">🤖 CCO NEXUS</div>
-                    <div class="msg-body">
-                        Sistema inicializado.<br>
-                        Protocolo de Carga Carregado.<br>
-                        Aguardando identificação do Comandante.<br><br>
-                        <em>Por favor, efetue Login.</em>
-                    </div>
                 </div>
-            </div>
 
             <div class="control-deck">
                 <div id="processing-bar" class="processing-hidden">
                     <div class="bar-animation"></div>
-                    <span>PROCESSANDO DADOS DE VOO...</span>
+                    <span>NEXUS KERNEL PROCESSANDO...</span>
                 </div>
 
                 <div class="quick-actions">
