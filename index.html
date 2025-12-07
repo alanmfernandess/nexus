@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS OS v10.6 | Cargo Logistics</title>
-    
+    <title>NEXUS OS v10.6 | Standalone Core</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
     <link rel="stylesheet" href="style.css">
     
@@ -17,35 +16,34 @@
 <body>
 
     <div class="app-container">
-        
         <aside class="sidebar">
             <div class="logo-area">
                 <h1>NEXUS OS</h1>
-                <span class="version-tag">v10.6 AUTO</span>
+                <span class="version-tag">v10.6 JS-CORE</span>
             </div>
 
             <div class="data-card base-card">
                 <label>BASE OPERACIONAL</label>
-                <div class="value" id="base-indicator">SBJR (Jacarepaguá)</div>
-                <div class="sub-value">Alternado Noturno: SBGL</div>
+                <div class="value" id="base-indicator">SBJR</div>
+                <div class="sub-value">Alternado: SBGL</div>
             </div>
 
             <div class="data-card finance-card">
                 <label>CAIXA EMPRESA</label>
-                <div class="value">R$ 1.293.800</div>
+                <div class="value" id="balance-display">R$ 1.293.800</div>
             </div>
 
             <div class="data-card status-card">
                 <label>STATUS CCO</label>
-                <div class="value status-online">● CONECTADO</div>
-                <div class="sub-value">Protocolo: Cargo Only</div>
+                <div class="value status-online">● LOCAL</div>
+                <div class="sub-value" id="phase-display">STANDBY</div>
             </div>
 
             <div class="fleet-list">
                 <label>FROTA ATIVA</label>
                 <ul>
-                    <li><strong>PR-WWA</strong> <span>Arrow IV (Turbo)</span></li>
-                    <li><strong>PR-WWB</strong> <span>Arrow IV (Turbo)</span></li>
+                    <li><strong>PR-WWA</strong> <span>Arrow IV</span></li>
+                    <li><strong>PR-WWB</strong> <span>Arrow IV</span></li>
                     <li><strong>PR-NEX</strong> <span>Warrior II</span></li>
                 </ul>
             </div>
@@ -56,18 +54,17 @@
         </aside>
 
         <main class="main-content">
-            
-            <div id="chat-container" class="chat-scroll-area">
-                </div>
+            <div id="chat-container" class="chat-scroll-area"></div>
 
             <div class="control-deck">
                 <div id="processing-bar" class="processing-hidden">
                     <div class="bar-animation"></div>
-                    <span>NEXUS KERNEL PROCESSANDO...</span>
+                    <span>CALCULANDO FÍSICA E LOGÍSTICA...</span>
                 </div>
 
                 <div class="quick-actions">
                     <button class="action-btn" data-cmd="Qual a minha missão?">📋 MISSÃO</button>
+                    <button class="action-btn" data-cmd="Vou de FL080">👍 APROVAR FL080</button>
                     <button class="action-btn" data-cmd="Acionado. Taxiando.">🔋 ACIONAR</button>
                     <button class="action-btn" data-cmd="Fora do solo">🛫 DECOLAR</button>
                     <button class="action-btn" data-cmd="Nivelado">✈️ NIVELADO</button>
@@ -87,6 +84,6 @@
         </main>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
