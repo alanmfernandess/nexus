@@ -1,201 +1,300 @@
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+/* NEXUS OS v10.6 - STANDALONE CORE
+   Lógica portada do Mega Prompt para JavaScript puro.
+   Não requer API Key. Funciona Offline.
+*/
 
-// ---------------------------------------------------------
-// 1. CONFIGURAÇÃO E ESTADO
-// ---------------------------------------------------------
-let genAI = null;
-let model = null;
-let chat = null;
+// --- ESTADO DO SISTEMA ---
+const STATE = {
+    balance: 1293800,
+    base: 'SBJR',
+    pilotName: null,
+    phase: 'IDLE', // IDLE, PLANNING, TAXI, FLIGHT, DESCENT, LANDED
+    currentMission: null,
+    startTime: null,
+    fleet: {
+        'PR-WWA': { type: 'Arrow IV', status: 'DISPONÍVEL' },
+        'PR-NEX': { type: 'Warrior II', status: 'DISPONÍVEL' }
+    }
+};
 
-// ELEMENTOS DOM
+// --- SIMULAÇÃO DE DADOS ---
+const MISSIONS_DB = [
+    { client: 'Mercado Livre Log', cargo: 'Eletrônicos (iPhone/Mac)', weight: 320, dest: 'SBCF', dist: 198, price: 4500 },
+    { client: 'Hospital Albert Einstein', cargo: 'Tecido Humano (Transplante)', weight: 15, dest: 'SBSP', dist: 185, price: 8200 },
+    { client: 'Bayer Pharma', cargo: 'Insumos Refrigerados', weight: 150, dest: 'SBKP', dist: 245, price: 5100 },
+    { client: 'Banco Central', cargo: 'Numerário (Malote)', weight: 480, dest: 'SBBR', dist: 490, price: 12000 }
+];
+
+// --- ELEMENTOS DOM ---
 const els = {
-    modal: document.getElementById('auth-modal'),
-    keyInput: document.getElementById('api-key-input'),
-    connectBtn: document.getElementById('connect-btn'),
-    chatContainer: document.getElementById('chat-container'),
-    userInput: document.getElementById('user-input'),
+    chat: document.getElementById('chat-container'),
+    input: document.getElementById('user-input'),
     sendBtn: document.getElementById('send-btn'),
-    quickBtns: document.querySelectorAll('.action-btn'),
+    btns: document.querySelectorAll('.action-btn'),
     loader: document.getElementById('processing-bar'),
+    balance: document.getElementById('balance-display'),
+    phase: document.getElementById('phase-display'),
     clock: document.getElementById('clock-display')
 };
 
-// ---------------------------------------------------------
-// 2. KERNEL NEXUS (MEGA PROMPT v10.6)
-// ---------------------------------------------------------
-const SYSTEM_INSTRUCTION = `
-*** SYSTEM KERNEL INJECTION: NEXUS OS v10.6 (SILENT CCO EDITION - WEB OPTIMIZED) ***
+// --- FUNÇÕES UTILITÁRIAS ---
+const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
+const updateUI = () => {
+    els.balance.innerText = formatCurrency(STATE.balance);
+    els.phase.innerText = STATE.phase;
+};
 
-[DIRETRIZ DE SISTEMA - NÍVEL 0]
-ATUE COMO: "CCO NEXUS", sistema de gestão de LOGÍSTICA AÉREA e SIMULADOR DE CARREIRA.
-TIPO DE OPERAÇÃO: CARGA PURA (CARGO ONLY). Proibido transporte de passageiros.
-HIERARQUIA: O USUÁRIO É O COMANDANTE. O CCO APENAS ACONSELHA.
-PROIBIÇÃO ATC: NUNCA aja como Torre/Controle. Não peça "Visual da pista" ou "Reporte posição". Fale apenas de LOGÍSTICA, FÍSICA e MOTOR.
-INTERFACE: TEXTO PURO COM MARKDOWN. Use tabelas para dados. Seja conciso (Radio Brevity).
-BASE OPERACIONAL: Jacarepaguá (RRJ/SBJR).
-REGRA DE HORÁRIO: Se o horário real (UTC-3) for > 22:00 ou < 06:00, a base MUDA para Galeão (SBGL) Terminal de Cargas.
+// --- MOTOR DE LÓGICA (SIMULANDO O GEMINI) ---
+async function processCommand(text) {
+    text = text.toLowerCase();
+    let response = "";
 
-=== 1. A FROTA CARGUEIRA (HARD DATA) ===
-A. HEAVY LOGISTICS SQUAD (Arrow IV - Turbo): PR-WWA, WWB, WWC.
-   - Specs: MTOW 2900 lbs | Cruise 160 KTAS | Fuel 72 Gal.
-   - Física: MP Constante (Turbo), Shock Cooling.
+    // 1. LOGIN
+    if (!STATE.pilotName) {
+        if (text.includes('login') || text.includes('cadastrar')) {
+            STATE.pilotName = text.split(' ').pop().toUpperCase();
+            return `
+Bem-vindo, Comandante **${STATE.pilotName}**.
+Identificação confirmada. O sistema NEXUS está pronto para operação de Carga.
 
-B. FEEDER LOGISTICS SQUAD (Warrior II - Aspirado): PR-NEX, NEY, NEZ.
-   - Specs: MTOW 2440 lbs | Cruise 115 KTAS | Fuel 48 Gal.
-   - Física: Perda por Densidade, Hélice Passo Fixo.
+**Base Atual:** ${STATE.base}
+**Status:** FROTA OPERACIONAL
 
-=== 2. MÓDULOS DE LÓGICA (SIMULADOS VIA TEXTO) ===
-1. Meteo: Ao planejar ou descer, SIMULE a busca de dados reais ou use conhecimento interno para criar condições realistas do Rio de Janeiro agora.
-2. Economia: Cotação Dólar e Brent baseada em valores reais recentes.
-3. Caos (Matriz 50): 5% chance de injetar evento logístico via texto (ex: "Atraso no caminhão").
-4. Cronometragem: Use o tempo real decorrido entre as mensagens do usuário para calcular custos.
-
-=== 3. PROTOCOLO DE GATILHOS ===
-
-1. [PLANEJAMENTO] "Qual a minha missão?"
-   > OUTPUT FORMAT:
-   ### 📋 MANIFESTO DE CARGA
-   | Item | Detalhe |
-   | :--- | :--- |
-   | **Cliente** | [Nome] |
-   | **Carga** | [Tipo] ([Kg]) |
-   | **Rota** | [Origem] > [Destino] |
-   | **Distância** | [NM] |
-   | **Sugestão FL** | [FL] |
-   > Finalize: "Aguardando decisão."
-
-2. [SOLO] "Acionado"
-   > OUTPUT: Inicie Block Time. Pergunte Combustível.
-
-3. [DECOLAGEM] "Fora do solo"
-   > OUTPUT:
-   ### 🛫 FLIGHT TIME INICIADO
-   - **Horário:** [HH:MM] Local
-   - **Instrução:** Monitore CHT/TIT na subida. Sem instrução de tráfego.
-
-4. [DESCIDA] "Iniciei descida"
-   > OUTPUT:
-   ### 📉 PREPARO PARA CHEGADA
-   - **Meteo Destino:** [Simule METAR]
-   - **Alerta:** Shock Cooling.
-   - **Logística:** Solo QAP.
-
-5. [POUSO] "No solo"
-   > OUTPUT: Pare Flight Time. Pergunte: "Turnaround Standard (45m) ou Express (20m)?"
-
-6. [CORTE] "Corte"
-   > OUTPUT:
-   ### 🛑 CORTE CONFIRMADO
-   - **Tempo Voo:** [HH:MM]
-   - **Auditoria:** Reporte Combustível e Qualidade Pouso.
-
-7. [STATUS] "Status Report"
-   > OUTPUT: Tabela financeira e lista de frota.
-
-MANTENHA SEMPRE O FORMATO MARKDOWN.
-`;
-
-// ---------------------------------------------------------
-// 3. INICIALIZAÇÃO
-// ---------------------------------------------------------
-
-// Relógio em Tempo Real
-setInterval(() => {
-    const now = new Date();
-    els.clock.innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-}, 1000);
-
-// Autenticação
-els.connectBtn.addEventListener('click', async () => {
-    const key = els.keyInput.value.trim();
-    if (!key) return alert('Insira uma chave API válida.');
-    
-    try {
-        genAI = new GoogleGenerativeAI(key);
-        model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-pro",
-            systemInstruction: SYSTEM_INSTRUCTION
-        });
-        
-        chat = model.startChat({ history: [] });
-        
-        // Teste de conexão silencioso
-        // await chat.sendMessage("Ping system check");
-        
-        els.modal.style.display = 'none';
-        console.log("NEXUS KERNEL: CONECTADO.");
-    } catch (error) {
-        alert('Erro ao conectar: ' + error.message);
+_Envie "Qual a minha missão?" para iniciar._
+            `;
+        } else {
+            return `Acesso negado. Identifique-se com **"Login [Sobrenome]"**.`;
+        }
     }
-});
 
-// ---------------------------------------------------------
-// 4. LÓGICA DE CHAT
-// ---------------------------------------------------------
-
-async function handleSend() {
-    const text = els.userInput.value.trim();
-    if (!text) return;
-
-    // UI Updates
-    appendMessage('user', text);
-    els.userInput.value = '';
-    setLoading(true);
-
-    try {
-        // Envia para o Gemini
-        const result = await chat.sendMessage(text);
-        const response = await result.response;
-        const replyText = response.text();
+    // 2. GATILHOS DE MISSÃO
+    if (text.includes('missão') || text.includes('escala')) {
+        if (STATE.phase !== 'IDLE') return "Missão já em andamento. Complete o voo atual.";
         
-        appendMessage('system', replyText);
-    } catch (error) {
-        console.error(error);
-        appendMessage('system', `**ERRO CRÍTICO:** Falha de comunicação com o servidor.\n_${error.message}_`);
-    } finally {
-        setLoading(false);
-        els.userInput.focus();
+        STATE.phase = 'PLANNING';
+        const mission = MISSIONS_DB[Math.floor(Math.random() * MISSIONS_DB.length)];
+        STATE.currentMission = mission;
+        
+        // Simula busca de meteo
+        const windDir = Math.floor(Math.random() * 360);
+        const windSpd = Math.floor(Math.random() * 15) + 3;
+        
+        return `
+### 📋 MANIFESTO DE CARGA (GERADO)
+| Item | Detalhe |
+| :--- | :--- |
+| **Cliente** | ${mission.client} |
+| **Carga** | ${mission.cargo} |
+| **Peso Total** | ${mission.weight} kg |
+| **Rota** | ${STATE.base} > ${mission.dest} |
+| **Distância** | ${mission.dist} NM |
+| **Receita Est.** | ${formatCurrency(mission.price)} |
+
+**Análise Meteo:** Vento ${windDir}°/${windSpd}kt. Céu Claro.
+**Sugestão FL:** FL080 (Vento de proa menor).
+
+> **Aguardando sua decisão de Nível (ex: "Vou de FL080").**
+        `;
     }
+
+    // 3. APROVAÇÃO
+    if (text.includes('fl') || text.includes('vou de') || text.includes('aprovado')) {
+        if (STATE.phase !== 'PLANNING') return "Nenhuma missão planejada.";
+        STATE.phase = 'PRE-FLIGHT';
+        return `
+### 🛫 BRIEFING OPERACIONAL
+Plano Aprovado.
+- **Combustível Mín:** 45 Galões
+- **TOLD (SBJR):** Pista Seca. Vr 65kt.
+- **Aeronave:** PR-WWC (Turbo Arrow IV)
+- **Status:** Carga sendo embarcada.
+
+> **Reporte "Acionado" para iniciar.**
+        `;
+    }
+
+    // 4. SOLO
+    if (text.includes('acionado') || text.includes('taxi')) {
+        if (STATE.phase !== 'PRE-FLIGHT') return "Comando inválido nesta fase.";
+        STATE.phase = 'TAXI';
+        return `
+**Block Time INICIADO.**
+Pressão do óleo: Verde.
+Magnetos: Checados.
+
+Logística: O caminhão liberou o pátio.
+> **Reporte "Fora do solo" na decolagem.**
+        `;
+    }
+
+    // 5. DECOLAGEM
+    if (text.includes('fora do solo') || text.includes('decol')) {
+        if (STATE.phase !== 'TAXI') return "Você precisa taxiar antes.";
+        STATE.phase = 'FLIGHT';
+        STATE.startTime = new Date();
+        const now = STATE.startTime.toLocaleTimeString();
+        return `
+### 🛫 FLIGHT TIME INICIADO
+- **Horário:** ${now}
+- **Instrução:** Mantenha MP 35" e 2500 RPM na subida.
+- **Monitoramento:** CHT estável. Carga segura.
+
+_(Modo CCO Silencioso Ativo)_
+        `;
+    }
+
+    // 6. CRUZEIRO
+    if (text.includes('nivelado')) {
+        if (STATE.phase !== 'FLIGHT') return "Você não está voando.";
+        return `
+**Copiado, Nivelado.**
+Parâmetros recebidos via telemetria:
+- MP: 30" | RPM: 2400
+- Temp Óleo: 180°F (Ideal)
+
+Auditoria: Verifique consumo de combustível.
+        `;
+    }
+
+    // 7. DESCIDA
+    if (text.includes('descida') || text.includes('descendo')) {
+        if (STATE.phase !== 'FLIGHT') return "Comando inválido.";
+        STATE.phase = 'DESCENT';
+        return `
+### 📉 PREPARO PARA CHEGADA
+Buscando dados de ${STATE.currentMission.dest}...
+
+- **METAR:** 14008KT CAVOK 28/22 Q1015
+- **Alerta:** Cuidado com **Shock Cooling**. Reduza potência suavemente.
+- **Logística:** Equipe de solo posicionada no TECA.
+
+> **Reporte "No solo".**
+        `;
+    }
+
+    // 8. POUSO
+    if (text.includes('no solo') || text.includes('pouso')) {
+        if (STATE.phase !== 'DESCENT') return "Você precisa descer antes.";
+        STATE.phase = 'LANDED';
+        return `
+**Pouso Confirmado.** Flight Time Parado.
+Bem-vindo a ${STATE.currentMission.dest}.
+
+Logística:
+- Box de Carga: 04
+- Desembarque iniciado.
+
+> **Reporte "Corte" para finalizar.**
+        `;
+    }
+
+    // 9. CORTE E PAGAMENTO
+    if (text.includes('corte')) {
+        if (STATE.phase !== 'LANDED') return "Aeronave em movimento ou voo.";
+        STATE.phase = 'IDLE';
+        
+        // Cálculos Financeiros
+        const receita = STATE.currentMission.price;
+        const custoCombustivel = Math.floor(receita * 0.3); // Simulado 30%
+        const salario = 350 + (STATE.currentMission.dist * 0.5);
+        const lucro = receita - custoCombustivel - salario;
+        
+        STATE.balance += lucro;
+        updateUI();
+
+        return `
+### 🛑 CORTE CONFIRMADO & FECHAMENTO
+Auditoria realizada com sucesso.
+
+| Categoria | Valor |
+| :--- | :--- |
+| **Receita Frete** | +${formatCurrency(receita)} |
+| **Combustível** | -${formatCurrency(custoCombustivel)} |
+| **Salário Piloto** | -${formatCurrency(salario)} |
+| **LUCRO MISSÃO** | **${formatCurrency(lucro)}** |
+
+**Saldo Atual:** ${formatCurrency(STATE.balance)}
+> **Aeronave pronta para retorno.**
+        `;
+    }
+
+    // STATUS GERAL
+    if (text.includes('status')) {
+        return `
+### 📊 RELATÓRIO GERAL
+- **Comandante:** ${STATE.pilotName || 'N/A'}
+- **Saldo:** ${formatCurrency(STATE.balance)}
+- **Fase Atual:** ${STATE.phase}
+- **Base:** ${STATE.base}
+
+**Frota:**
+- PR-WWA: Em Voo
+- PR-NEX: Disponível
+        `;
+    }
+
+    // DEFAULT
+    return "Comando não reconhecido pelo protocolo CCO. Tente 'Status' ou verifique o checklist.";
 }
 
-function appendMessage(sender, text) {
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${sender === 'user' ? 'user-msg' : 'system-msg'}`;
+// --- INTERFACE ---
+function addMessage(sender, text) {
+    const div = document.createElement('div');
+    div.className = `message ${sender === 'user' ? 'user-msg' : 'system-msg'}`;
     
     if (sender === 'system') {
-        // Renderiza Markdown e cria cabeçalho
-        const header = `<div class="msg-header">🤖 CCO NEXUS</div>`;
+        const header = `<div class="msg-header">🤖 CCO NEXUS (LOCAL)</div>`;
         const body = `<div class="msg-body">${marked.parse(text)}</div>`;
-        msgDiv.innerHTML = header + body;
+        div.innerHTML = header + body;
     } else {
-        msgDiv.innerText = text;
+        div.innerText = text;
     }
-
-    els.chatContainer.appendChild(msgDiv);
-    els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
+    
+    els.chat.appendChild(div);
+    els.chat.scrollTop = els.chat.scrollHeight;
 }
 
-function setLoading(active) {
-    els.sendBtn.disabled = active;
-    els.loader.style.display = active ? 'flex' : 'none';
-    els.userInput.disabled = active;
+async function handleSend() {
+    const text = els.input.value.trim();
+    if (!text) return;
+    
+    addMessage('user', text);
+    els.input.value = '';
+    
+    // Simula tempo de processamento
+    els.loader.style.display = 'flex';
+    els.sendBtn.disabled = true;
+    
+    await delay(800 + Math.random() * 1000); // 0.8s a 1.8s de delay
+    
+    const reply = await processCommand(text);
+    addMessage('system', reply);
+    
+    els.loader.style.display = 'none';
+    els.sendBtn.disabled = false;
+    els.input.focus();
 }
 
-// ---------------------------------------------------------
-// 5. EVENT LISTENERS
-// ---------------------------------------------------------
-
+// Event Listeners
 els.sendBtn.addEventListener('click', handleSend);
+els.input.addEventListener('keypress', e => { if(e.key === 'Enter') handleSend(); });
+els.btns.forEach(btn => btn.addEventListener('click', () => {
+    els.input.value = btn.getAttribute('data-cmd');
+    handleSend();
+}));
 
-els.userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSend();
-});
+// Init
+setInterval(() => {
+    els.clock.innerText = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}, 1000);
 
-// Botões Rápidos
-els.quickBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        const cmd = btn.getAttribute('data-cmd');
-        els.userInput.value = cmd;
-        handleSend();
-    });
-});
+// Mensagem Inicial
+setTimeout(() => {
+    addMessage('system', `
+Sistema NEXUS OS v10.6 (Standalone) carregado.
+Modo Offline Ativo. Sem dependência de API.
+
+**Identifique-se:** Digite "Login [Sobrenome]".
+    `);
+}, 500);
